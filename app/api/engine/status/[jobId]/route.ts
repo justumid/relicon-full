@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const response = await fetch(`http://localhost:8000/status/${params.jobId}`);
+    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
+    const response = await fetch(`${engineUrl}/status/${params.jobId}`);
 
     if (!response.ok) {
       const error = await response.json();

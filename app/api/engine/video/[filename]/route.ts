@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { filename: string } }
 ) {
   try {
-    const response = await fetch(`http://localhost:8000/video/${params.filename}`);
+    const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
+    const response = await fetch(`${engineUrl}/video/${params.filename}`);
 
     if (!response.ok) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
