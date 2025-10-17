@@ -41,11 +41,27 @@ export function ChatPanel() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return
 
-    setMessages([...messages, { role: "user", content: input }])
+    const userMessage = { role: "user" as const, content: input }
+    setMessages([...messages, userMessage])
     setInput("")
+
+    try {
+      // Save message to database
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_email: 'user@example.com', // Replace with actual user email
+          message: input,
+          message_type: 'chat'
+        })
+      })
+    } catch (error) {
+      console.error('Failed to save message:', error)
+    }
 
     setTimeout(() => {
       setMessages((prev) => [
@@ -58,13 +74,27 @@ export function ChatPanel() {
     }, 1000)
   }
 
-  const handleBarSend = () => {
+  const handleBarSend = async () => {
     if (!barInput.trim()) return
 
-    const newMessages = [...messages, { role: "user", content: barInput }]
+    const newMessages = [...messages, { role: "user" as const, content: barInput }]
     setMessages(newMessages)
-
     setIsPanelOpen(true)
+
+    try {
+      // Save message to database
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_email: 'user@example.com', // Replace with actual user email
+          message: barInput,
+          message_type: 'chat'
+        })
+      })
+    } catch (error) {
+      console.error('Failed to save message:', error)
+    }
 
     setBarInput("")
 
