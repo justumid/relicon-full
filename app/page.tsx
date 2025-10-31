@@ -470,16 +470,16 @@ export default function LandingPage() {
                 {[
                   {
                     name: "Starter",
-                    price: "$99",
-                    period: "10 self improving ads",
-                    description: "10 rounds of compounding ad growth through Relicon's self-improving engine.",
+                    price: "$149",
+                    period: "4 self improving ads",
+                    description: "4 rounds of compounding ad growth through Relicon's self-improving engine.",
                     features: ["Self-Improving Ads", "Outcome-Based Optimization", "Basic Analytics", "Email Support"],
                     cta: "Get Started",
                   },
                   {
                     name: "Professional",
                     price: "$299",
-                    period: "30 self improving ads",
+                    period: "10 self improving ads",
                     description: "Accelerated growth with advanced optimization and priority support.",
                     features: [
                       "Self-Improving Ads",
