@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  // Check if request is from app subdomain
+  const hostname = request.headers.get('host') || '';
+  const isAppSubdomain = hostname.startsWith('app.');
+
+  // Redirect app subdomain root to login page
+  if (isAppSubdomain && request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   const response = NextResponse.next();
 
   // Security Headers
