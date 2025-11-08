@@ -28,6 +28,7 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.render.*
 
 # vercel
 .vercel
@@ -47,3 +48,18 @@ venv/
 ENV/
 engine/outputs/
 *.log
+
+# backup and old files
+*.old
+*.backup
+*.bak
+*~
+
+# package management
+uv.lock
+
+# docker (using Render instead)
+docker-compose*.yml
+Dockerfile*
+nginx*.conf
+prometheus.yml
