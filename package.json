@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev -p 5000 -H 0.0.0.0",
     "lint": "eslint .",
-    "start": "next start -p 5000 -H 0.0.0.0",
+    "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "validate": "node scripts/validate-setup.js",
     "setup": "cp .env.local.template .env.local && echo '✅ Created .env.local - Please fill in your API keys'",
     "backend": "cd engine && python3 server.py",
