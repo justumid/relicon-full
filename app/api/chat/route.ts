@@ -3,6 +3,8 @@ import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 // Lazy initialization to avoid build-time errors
 let openaiInstance: OpenAI | null = null;
