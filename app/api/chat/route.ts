@@ -4,9 +4,20 @@ import OpenAI from 'openai';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiInstance) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured');
+    }
+    openaiInstance = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiInstance;
+}
 
 const SYSTEM_PROMPT = `You are Relicon AI, an expert advertising and analytics assistant specializing in social media marketing, video ads, and performance optimization.
 
@@ -30,10 +41,10 @@ export async function POST(request: NextRequest) {
     }
 
     const { messages, message } = await request.json();
-    
+
     // Handle both message formats
     const userMessage = message || (messages && messages[messages.length - 1]?.content);
-    
+
     if (!userMessage) {
       return NextResponse.json(
         { error: 'Message is required' },
@@ -41,6 +52,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
