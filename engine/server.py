@@ -287,19 +287,23 @@ async def get_metrics():
 
 if __name__ == "__main__":
     print("🚀 Starting Enhanced Relicon API Server...")
-    
+
     # Graceful shutdown handler
     def signal_handler(signum, frame):
         logger.info("Received shutdown signal")
         sys.exit(0)
-    
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
+    # Get port from environment variable (Railway sets this)
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting server on port {port}")
+
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8000,
+        port=port,
         log_level="info",
         access_log=True
     )
