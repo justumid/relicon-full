@@ -42,6 +42,20 @@ app.prepare().then(() => {
         return
       }
       
+      // Debug endpoint to check environment
+      if (parsedUrl.pathname === '/debug/env') {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          ENGINE_URL: process.env.ENGINE_URL,
+          OPENAI_API_KEY_EXISTS: !!process.env.OPENAI_API_KEY,
+          NODE_ENV: process.env.NODE_ENV,
+          ALL_ENV_KEYS: Object.keys(process.env).filter(key => 
+            key.includes('ENGINE') || key.includes('OPENAI') || key.includes('NEXT')
+          )
+        }, null, 2))
+        return
+      }
+      
       // Proxy API routes to Python engine service
       if (parsedUrl.pathname.startsWith('/api/engine/') || parsedUrl.pathname === '/api/chat') {
         let enginePath;
