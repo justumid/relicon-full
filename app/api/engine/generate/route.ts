@@ -74,12 +74,21 @@ export async function POST(request: NextRequest) {
     console.log('- Request body keys:', Object.keys(body));
     console.log('- Product name:', body.product_name);
     
+    // Use dynamic import for node-fetch to handle TLS issues
+    const fetch = (await import('node-fetch')).default;
+    const https = await import('https');
+    
+    const agent = new https.Agent({
+      rejectUnauthorized: false // Allow self-signed certificates
+    });
+    
     const response = await fetch(`${engineUrl}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      agent: engineUrl.startsWith('https:') ? agent : undefined
     });
 
     console.log('Engine response status:', response.status);
