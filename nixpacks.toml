@@ -1,18 +1,16 @@
-# Multi-language support: Node.js + Python
 [phases.setup]
-nixPkgs = ["nodejs_20", "python311", "python311Packages.pip"]
+nixPkgs = ['nodejs_20', 'python311', 'python311Packages.pip']
 
 [phases.install]
 cmds = [
-  "npm install -g pnpm@9",
-  "/usr/local/bin/pnpm install --frozen-lockfile"
+    'npm ci',
 ]
 
 [phases.build]
 cmds = [
-  "/usr/local/bin/pnpm build",
-  "cd engine && pip install -r requirements.txt --break-system-packages"
+    'npm run build',
+    'cd engine && pip install -r requirements.txt --break-system-packages'
 ]
 
 [start]
-cmd = "cd engine && python3 static_server.py"
+cmd = 'npm start'
