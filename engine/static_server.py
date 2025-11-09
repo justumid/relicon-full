@@ -3,7 +3,6 @@ Combined server that serves both FastAPI backend and Next.js frontend
 """
 
 import os
-import sys
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -28,17 +27,21 @@ app.add_middleware(
 # Mount the API under /api prefix
 app.mount("/api", api_app)
 
-# Serve static files from Next.js build
+# Serve Next.js static files
 static_path = Path(__file__).parent.parent / ".next" / "static"
 if static_path.exists():
     app.mount("/_next/static", StaticFiles(directory=str(static_path)), name="static")
 
-# Serve Next.js pages
+# Serve public files
+public_path = Path(__file__).parent.parent / "public"
+if public_path.exists():
+    app.mount("/public", StaticFiles(directory=str(public_path)), name="public")
+
 @app.get("/{full_path:path}")
 async def serve_frontend(request: Request, full_path: str):
     """Serve Next.js frontend with subdomain routing"""
     
-    # Check if it's an API route
+    # Skip API routes
     if full_path.startswith("api/"):
         return {"error": "API route not found"}
     
@@ -60,15 +63,23 @@ async def serve_frontend(request: Request, full_path: str):
         if full_path.startswith("dashboard") or full_path == "login":
             return RedirectResponse(url=f"https://app.relicon.co/{full_path}")
     
-    # Serve index.html for all frontend routes
-    index_path = Path(__file__).parent.parent / ".next" / "server" / "app" / "page.html"
-    if not index_path.exists():
-        index_path = Path(__file__).parent.parent / "public" / "index.html"
+    # Try to serve specific page first
+    page_paths = [
+        Path(__file__).parent.parent / ".next" / "server" / "pages" / f"{full_path}.html",
+        Path(__file__).parent.parent / ".next" / "server" / "app" / full_path / "page.html",
+        Path(__file__).parent.parent / ".next" / "server" / "app" / "page.html"
+    ]
     
+    for page_path in page_paths:
+        if page_path.exists():
+            return FileResponse(str(page_path))
+    
+    # Fallback to index.html
+    index_path = Path(__file__).parent.parent / "public" / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
     
-    return {"error": "Frontend not built"}
+    return {"error": "Page not found"}
 
 if __name__ == "__main__":
     import uvicorn
