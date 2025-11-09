@@ -80,16 +80,17 @@ export async function POST(request: NextRequest) {
       data = await response.json();
     } catch (engineError) {
       console.error('Engine connection failed:', engineError);
+      console.error('ENGINE_URL was:', engineUrl);
       
       // Fallback: Create mock job for development
       data = {
         job_id: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         status: 'queued',
-        message: 'Video generation started (mock mode)',
+        message: 'Video generation started (mock mode - engine unavailable)',
         estimated_time: 300
       };
       
-      console.log('Using mock generation:', data);
+      console.log('Using mock generation due to engine failure:', data);
     }
 
     // Store video generation job in database
