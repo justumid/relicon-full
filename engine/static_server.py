@@ -18,7 +18,7 @@ app = FastAPI(title="Relicon Combined Server")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://app.relicon.co"],
+    allow_origins=["https://relicon.co"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

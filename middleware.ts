@@ -3,15 +3,12 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
-  const isAppDomain = hostname === 'app.relicon.co';
+  const isMainDomain = hostname === 'relicon.co';
 
-  // Only handle app.relicon.co
-  if (isAppDomain) {
-    // Landing page at root
-    if (request.nextUrl.pathname === '/') {
-      // Show landing page, don't redirect
-      return NextResponse.next();
-    }
+  // Only handle relicon.co - serve all pages normally
+  if (isMainDomain) {
+    // All routes available: landing (/), login, dashboard, etc.
+    return NextResponse.next();
   }
 
   const response = NextResponse.next();
