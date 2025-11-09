@@ -35,9 +35,21 @@ Always be helpful, concise, and provide actionable insights. Keep responses unde
 
 export async function POST(request: NextRequest) {
   try {
+    // Log environment for debugging
+    console.log('Chat API called');
+    console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+    console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
+
     if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set in environment variables');
       return NextResponse.json(
-        { error: 'OpenAI API key not configured' },
+        {
+          error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables.',
+          debug: {
+            hasKey: false,
+            env: process.env.NODE_ENV
+          }
+        },
         { status: 500 }
       );
     }
@@ -54,6 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Calling OpenAI API...');
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -66,14 +79,30 @@ export async function POST(request: NextRequest) {
     });
 
     const response = completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response.';
+    console.log('OpenAI API success');
 
     return NextResponse.json({ message: response });
 
   } catch (error: any) {
     console.error('Chat API error:', error);
-    
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+
+    // More specific error message
+    let errorMessage = 'Chat service temporarily unavailable. Please try again.';
+    if (error.message?.includes('API key')) {
+      errorMessage = 'Invalid OpenAI API key. Please check your configuration.';
+    }
+
     return NextResponse.json(
-      { error: 'Chat service temporarily unavailable. Please try again.' },
+      {
+        error: errorMessage,
+        debug: {
+          errorType: error.name,
+          errorMessage: error.message,
+          hasApiKey: !!process.env.OPENAI_API_KEY
+        }
+      },
       { status: 500 }
     );
   }

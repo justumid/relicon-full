@@ -11,6 +11,7 @@ import { Loader2, Heart, MessageCircle, Share2, Bookmark, Play, Pause, Send, Dow
 import Image from "next/image"
 import { toast } from "sonner"
 import { PublishModal } from "@/components/PublishModal"
+import { useAuth } from "@/lib/auth"
 
 interface FormData {
   productName: string
@@ -19,6 +20,13 @@ interface FormData {
   targetAudience: string
   creativeStyle: string
   productImage: File | null
+  campaignId: string
+}
+
+interface Campaign {
+  id: number
+  product_name: string
+  campaign_type: string
 }
 
 interface JobStatus {
@@ -31,6 +39,7 @@ interface JobStatus {
 }
 
 export default function StudioPage() {
+  const { user } = useAuth()
   const [isGenerating, setIsGenerating] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [videoId, setVideoId] = useState<number | null>(null)
@@ -41,6 +50,8 @@ export default function StudioPage() {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
   const [publishModalOpen, setPublishModalOpen] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
 
   const [formData, setFormData] = useState<FormData>({
     productName: "",
@@ -48,8 +59,34 @@ export default function StudioPage() {
     campaignType: "",
     targetAudience: "",
     creativeStyle: "",
-    productImage: null
+    productImage: null,
+    campaignId: ""
   })
+
+  // Fetch campaigns when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      fetchCampaigns()
+    }
+  }, [user?.id])
+
+  const fetchCampaigns = async () => {
+    if (!user?.id) return
+
+    setIsLoadingCampaigns(true)
+    try {
+      const response = await fetch(`/api/campaigns?userId=${user.id}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setCampaigns(data.campaigns || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch campaigns:', error)
+    } finally {
+      setIsLoadingCampaigns(false)
+    }
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -123,7 +160,9 @@ export default function StudioPage() {
           duration: 18,
           call_to_action: "Learn more",
           creative_style: formData.creativeStyle || "modern",
-          product_image_url: productImageUrl
+          product_image_url: productImageUrl,
+          user_id: user?.id,
+          campaign_id: formData.campaignId || null
         })
       })
 
@@ -248,8 +287,33 @@ export default function StudioPage() {
         <div className="space-y-6">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Product Information</h2>
-            
+
             <div className="space-y-4">
+              {/* Campaign Selector */}
+              <div>
+                <Label htmlFor="campaign">Campaign (Optional)</Label>
+                <Select
+                  value={formData.campaignId}
+                  onValueChange={(value) => setFormData({ ...formData, campaignId: value })}
+                  disabled={isLoadingCampaigns}
+                >
+                  <SelectTrigger id="campaign">
+                    <SelectValue placeholder={isLoadingCampaigns ? "Loading campaigns..." : "Select a campaign or leave blank"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Campaign (Standalone Ad)</SelectItem>
+                    {campaigns.map((campaign) => (
+                      <SelectItem key={campaign.id} value={campaign.id.toString()}>
+                        {campaign.product_name} ({campaign.campaign_type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Associate this ad with a campaign for better organization and tracking
+                </p>
+              </div>
+
               <div>
                 <Label htmlFor="productName">Product Name *</Label>
                 <Input

@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Use the generated_videos table for campaign data
+    // Fetch campaigns that belong to the user OR have no user_id (legacy campaigns)
     let query = supabaseServer
       .from('generated_videos')
       .select('*')
-      .eq('user_id', userId)
+      .or(`user_id.eq.${userId},user_id.is.null`)
       .order('created_at', { ascending: false });
 
     if (status) {

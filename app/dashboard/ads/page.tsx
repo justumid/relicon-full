@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Search, Filter, Play, Download, Share2 } from 'lucide-react'
 
 export default function AdsPage() {
+  const router = useRouter()
   const { user, loading } = useAuth()
   const [ads, setAds] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -88,7 +90,10 @@ export default function AdsPage() {
             <Play className="w-12 h-12 text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-2">No ads created yet</h3>
             <p className="text-gray-400 mb-4">Start creating video ads in the Studio</p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => router.push('/dashboard/studio')}
+            >
               Go to Studio
             </Button>
           </CardContent>

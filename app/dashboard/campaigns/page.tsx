@@ -1,18 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Search } from 'lucide-react'
+import { CreateCampaignModal } from '@/components/CreateCampaignModal'
 
 export default function CampaignsPage() {
+  const router = useRouter()
   const { user, loading } = useAuth()
   const [campaigns, setCampaigns] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && user?.id) {
@@ -68,7 +72,10 @@ export default function CampaignsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <Input placeholder="Search campaigns..." className="pl-10 bg-[#0a0a0a] border-[#252525] text-white" />
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Campaign
           </Button>
@@ -86,7 +93,10 @@ export default function CampaignsPage() {
           <CardContent className="p-8 text-center">
             <h3 className="text-lg font-medium text-white mb-2">No campaigns yet</h3>
             <p className="text-gray-400 mb-4">Create your first campaign to get started</p>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Create Campaign
             </Button>
@@ -95,7 +105,11 @@ export default function CampaignsPage() {
       ) : (
         <div className="grid gap-4">
           {campaigns.map((campaign: any) => (
-            <Card key={campaign.id} className="bg-[#111111] border-[#252525]">
+            <Card
+              key={campaign.id}
+              className="bg-[#111111] border-[#252525] cursor-pointer hover:border-[#404040] transition-colors"
+              onClick={() => router.push(`/dashboard/campaigns/${campaign.id}`)}
+            >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -113,6 +127,16 @@ export default function CampaignsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Create Campaign Modal */}
+      {user && (
+        <CreateCampaignModal
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          userId={user.id}
+          onSuccess={fetchCampaigns}
+        />
       )}
     </div>
   )

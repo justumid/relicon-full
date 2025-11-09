@@ -13,10 +13,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Fetch videos that belong to the user OR have no user_id (legacy videos)
     const { data, error } = await supabaseServer
       .from('generated_videos')
       .select('*')
-      .eq('user_id', userId)
+      .or(`user_id.eq.${userId},user_id.is.null`)
       .order('created_at', { ascending: false })
 
     if (error) {

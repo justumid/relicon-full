@@ -22,7 +22,7 @@ class ProviderManager:
     def get_video_generator(self) -> VideoGenerator:
         """Get the configured video generation provider."""
         if self._video_provider is None:
-            provider_name = getattr(settings, 'VIDEO_PROVIDER', 'hailuo').lower()
+            provider_name = getattr(settings, 'VIDEO_PROVIDER', 'luma').lower()
             self._video_provider = self._create_video_provider(provider_name)
         return self._video_provider
     
@@ -42,51 +42,27 @@ class ProviderManager:
     
     def _create_video_provider(self, provider_name: str) -> VideoGenerator:
         """Create video provider instance based on configuration."""
-        # Check for mock mode
-        mock_mode = os.getenv('MOCK_MODE', 'false').lower() == 'true'
-        if mock_mode:
-            from providers.mock_video import MockVideoProvider
-            print("🎭 Using MOCK video provider (no API calls)")
-            return MockVideoProvider()
-
-        if provider_name == 'hailuo':
-            from providers.hailuo import HailuoProvider
-            return HailuoProvider()
-        elif provider_name == 'luma':
+        if provider_name == 'luma':
             from providers.luma import LumaProvider
             return LumaProvider()
         else:
-            raise ValueError(f"Unknown video provider: {provider_name}")
+            raise ValueError(f"Unknown video provider: {provider_name}. Only 'luma' is supported.")
     
     def _create_audio_provider(self, provider_name: str) -> AudioGenerator:
         """Create audio provider instance based on configuration."""
-        # Check for mock mode
-        mock_mode = os.getenv('MOCK_MODE', 'false').lower() == 'true'
-        if mock_mode:
-            from providers.mock_audio import MockAudioProvider
-            print("🎭 Using MOCK audio provider (no API calls)")
-            return MockAudioProvider()
-
         if provider_name == 'elevenlabs':
             from providers.elevenlabs import ElevenLabsProvider
             return ElevenLabsProvider()
         else:
-            raise ValueError(f"Unknown audio provider: {provider_name}")
+            raise ValueError(f"Unknown audio provider: {provider_name}. Only 'elevenlabs' is supported.")
     
     def _create_text_provider(self, provider_name: str) -> TextGenerator:
         """Create text provider instance based on configuration."""
-        # Check for mock mode
-        mock_mode = os.getenv('MOCK_MODE', 'false').lower() == 'true'
-        if mock_mode:
-            from providers.mock_text import MockTextProvider
-            print("🎭 Using MOCK text provider (no API calls)")
-            return MockTextProvider()
-
         if provider_name == 'openai':
             from providers.openai import OpenAIProvider
             return OpenAIProvider()
         else:
-            raise ValueError(f"Unknown text provider: {provider_name}")
+            raise ValueError(f"Unknown text provider: {provider_name}. Only 'openai' is supported.")
     
     def set_video_provider(self, provider_name: str) -> None:
         """Change video provider at runtime."""

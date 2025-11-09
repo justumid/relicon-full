@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { CubeIcon } from "@/components/icons/CubeIcon"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth"
 
 interface Message {
   role: "user" | "assistant"
@@ -35,14 +36,12 @@ const suggestedQuestions = [
 ]
 
 export default function ChatPage() {
+  const { user } = useAuth()
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  // TODO: Get user ID from authentication
-  const userId = null // Replace with auth.user?.id when auth is implemented
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -89,7 +88,7 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           messages: conversationHistory,
-          userId: userId
+          userId: user?.id
         })
       })
 

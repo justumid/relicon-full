@@ -4,11 +4,27 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   // Check if request is from app subdomain
   const hostname = request.headers.get('host') || '';
-  const isAppSubdomain = hostname.startsWith('app.');
+  const isAppSubdomain = hostname.startsWith('app.') || hostname === 'app.relicon.co';
 
-  // Redirect app subdomain root to login page
-  if (isAppSubdomain && request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Handle app subdomain routing
+  if (isAppSubdomain) {
+    // Redirect root to login
+    if (request.nextUrl.pathname === '/') {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    
+    // Block non-app routes on app subdomain
+    const allowedPaths = ['/login', '/dashboard', '/api'];
+    const isAllowed = allowedPaths.some(path => request.nextUrl.pathname.startsWith(path));
+    
+    if (!isAllowed) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  } else {
+    // Block dashboard routes on main domain
+    if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname === '/login') {
+      return NextResponse.redirect(new URL('https://app.relicon.co' + request.nextUrl.pathname));
+    }
   }
 
   const response = NextResponse.next();

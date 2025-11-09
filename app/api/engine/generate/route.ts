@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
           target_audience: body.target_audience,
           creative_style: body.creative_style,
           product_image_url: body.product_image_url,
+          user_id: body.user_id || null,
+          campaign_id: body.campaign_id || null,
           status: 'queued',
           progress: 0,
           metadata: {
