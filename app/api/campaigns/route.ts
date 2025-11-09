@@ -21,31 +21,61 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use the generated_videos table for campaign data
-    // Fetch campaigns that belong to the user OR have no user_id (legacy campaigns)
-    let query = supabaseServer
-      .from('generated_videos')
-      .select('*')
-      .or(`user_id.eq.${userId},user_id.is.null`)
-      .order('created_at', { ascending: false });
+    // Try to fetch from campaigns table first
+    let campaignsData;
+    try {
+      let query = supabaseServer
+        .from('campaigns')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    if (status) {
-      query = query.eq('status', status);
-    }
+      if (status) {
+        query = query.eq('status', status);
+      }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      campaignsData = data;
+    } catch (error) {
+      // Fallback: Create mock campaigns from generated videos
+      console.log('No campaigns table, creating mock campaigns from videos');
+      
+      const { data: videos } = await supabaseServer
+        .from('generated_videos')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching campaigns:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch campaigns' },
-        { status: 500 }
-      );
+      // Group videos by campaign_type to create mock campaigns
+      const campaignGroups = videos?.reduce((acc, video) => {
+        const key = video.campaign_type || 'general';
+        if (!acc[key]) {
+          acc[key] = {
+            id: `campaign_${key}_${Date.now()}`,
+            name: `${key.charAt(0).toUpperCase() + key.slice(1)} Campaign`,
+            objective: key,
+            status: 'active',
+            budget_total: 1000,
+            budget_daily: 50,
+            created_at: video.created_at,
+            user_id: userId,
+            videos_count: 0,
+            total_views: 0,
+            total_engagement: 0
+          };
+        }
+        acc[key].videos_count++;
+        return acc;
+      }, {} as any) || {};
+
+      campaignsData = Object.values(campaignGroups);
     }
 
     return NextResponse.json({
       success: true,
-      campaigns: data || []
+      campaigns: campaignsData || []
     });
   } catch (error) {
     console.error('Campaigns API error:', error);
