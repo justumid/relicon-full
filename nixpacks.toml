@@ -1,4 +1,7 @@
-# Override the auto-detected build commands
+# Multi-language support: Node.js + Python
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
+
 [phases.build]
 cmds = [
   "pnpm install --frozen-lockfile",
