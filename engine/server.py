@@ -69,8 +69,14 @@ async def lifespan(app: FastAPI):
         logger.info("Starting Relicon API server...")
         
         # Initialize services
-        from backend.core.job_manager import JobManager
-        app_state["job_manager"] = JobManager()
+        try:
+            from backend.core.job_manager import JobManager
+            app_state["job_manager"] = JobManager()
+            logger.info("Job manager initialized successfully")
+        except Exception as e:
+            logger.warning(f"Job manager initialization failed: {e}")
+            app_state["job_manager"] = None
+        
         app_state["health_status"] = "healthy"
         
         # Validate API keys
