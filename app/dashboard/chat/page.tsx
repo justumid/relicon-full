@@ -88,7 +88,7 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           messages: conversationHistory,
-          userId: user?.id
+          userId: user?.id || 'anonymous'
         })
       })
 

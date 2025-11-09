@@ -108,6 +108,11 @@ Always be helpful, concise, and provide actionable insights. Keep responses unde
 export async function POST(request: NextRequest) {
   try {
     const { messages, message, userId } = await request.json();
+    
+    console.log('Chat request received:');
+    console.log('- userId:', userId);
+    console.log('- message:', message);
+    console.log('- messages length:', messages?.length);
 
     // Handle both message formats
     const userMessage = message || (messages && messages[messages.length - 1]?.content);
@@ -121,10 +126,11 @@ export async function POST(request: NextRequest) {
 
     // Get user analytics data
     const analytics = await getUserAnalytics(userId);
+    console.log('Analytics retrieved:', !!analytics);
     
     // Prepare context for AI
     let contextMessage = '';
-    if (analytics) {
+    if (analytics && analytics.totalVideos > 0) {
       contextMessage = `
 User Analytics Context:
 - Total Videos: ${analytics.totalVideos}
@@ -132,7 +138,7 @@ User Analytics Context:
 - Videos Created This Week: ${analytics.recentVideos}
 
 Recent Campaigns: ${analytics.campaigns?.map(c => 
-  `"${c.name}" (${c.campaign_type}, created ${new Date(c.created_at).toLocaleDateString()})`
+  `"${c.name}" (${c.campaign_type || c.objective}, created ${new Date(c.created_at).toLocaleDateString()})`
 ).join(', ') || 'None'}
 
 Recent Videos: ${analytics.videos?.map(v => 
@@ -142,8 +148,10 @@ Recent Videos: ${analytics.videos?.map(v =>
 Use this data to provide specific insights about the user's performance.
 `;
     } else {
-      contextMessage = 'No user data available. Ask the user to provide more context or suggest they create campaigns first.';
+      contextMessage = `The user has no video generation data yet. Suggest they create their first video campaign to start tracking analytics. Be encouraging and helpful about getting started with video creation.`;
     }
+
+    console.log('Context message prepared, length:', contextMessage.length);
 
     console.log('Calling OpenAI API with user context...');
     const openai = getOpenAI();
