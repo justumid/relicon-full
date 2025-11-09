@@ -18,7 +18,7 @@ app = FastAPI(title="Relicon Combined Server")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://relicon-full-production-35cc.up.railway.app", "https://app.relicon.co"],
+    allow_origins=["https://relicon.co", "https://app.relicon.co", "https://relicon-full-production-35cc.up.railway.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,29 +39,38 @@ if public_path.exists():
 
 @app.get("/{full_path:path}")
 async def serve_frontend(request: Request, full_path: str):
-    """Serve Next.js frontend with subdomain routing"""
+    """Serve Next.js frontend with dual domain routing"""
     
     # Skip API routes
     if full_path.startswith("api/"):
         return {"error": "API route not found"}
     
-    # Get hostname for subdomain detection
+    # Get hostname for domain detection
     hostname = request.headers.get("host", "")
     is_app_subdomain = hostname.startswith("app.") or hostname == "app.relicon.co"
+    is_main_domain = hostname == "relicon.co" or "railway.app" in hostname
     
-    # Handle subdomain routing
+    # Handle app subdomain routing
     if is_app_subdomain:
         # App subdomain: serve login/dashboard
         if full_path == "" or full_path == "/":
             return RedirectResponse(url="/login")
         
-        allowed_paths = ["login", "dashboard"]
+        # Only allow app routes
+        allowed_paths = ["login", "dashboard", "_next", "favicon"]
         if not any(full_path.startswith(path) for path in allowed_paths):
             return RedirectResponse(url="/dashboard")
-    else:
-        # Main domain: redirect dashboard/login to app subdomain
+    
+    # Handle main domain routing  
+    elif is_main_domain:
+        # Main domain: redirect app routes to app subdomain
         if full_path.startswith("dashboard") or full_path == "login":
             return RedirectResponse(url=f"https://app.relicon.co/{full_path}")
+        
+        # Serve landing page and marketing content
+        marketing_paths = ["", "/", "about", "contact", "join-waitlist", "_next", "favicon"]
+        if not any(full_path.startswith(path) for path in marketing_paths):
+            return RedirectResponse(url="/")
     
     # Try to serve specific page first
     page_paths = [
