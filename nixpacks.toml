@@ -1,11 +1,14 @@
 [phases.setup]
-nixPkgs = ["nodejs", "python3", "python3Packages.pip"]
+nixPkgs = ["nodejs", "python3", "python3Packages.pip", "python3Packages.virtualenv"]
 
 [phases.install]
-cmds = ["npm install", "cd engine && pip install -r requirements.txt"]
+cmds = [
+  "npm install",
+  "cd engine && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+]
 
 [phases.build]
 cmds = ["npm run build"]
 
 [start]
-cmd = "cd engine && python static_server.py"
+cmd = "cd engine && source venv/bin/activate && python static_server.py"
