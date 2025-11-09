@@ -70,11 +70,11 @@ async def lifespan(app: FastAPI):
         
         # Initialize services
         try:
-            from backend.core.job_manager import JobManager
-            app_state["job_manager"] = JobManager()
-            logger.info("Job manager initialized successfully")
+            from core.orchestrator import VideoOrchestrator
+            app_state["job_manager"] = VideoOrchestrator()
+            logger.info("VideoOrchestrator initialized successfully")
         except Exception as e:
-            logger.warning(f"Job manager initialization failed: {e}")
+            logger.warning(f"VideoOrchestrator initialization failed: {e}")
             app_state["job_manager"] = None
         
         app_state["health_status"] = "healthy"
