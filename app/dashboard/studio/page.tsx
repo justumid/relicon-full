@@ -301,7 +301,7 @@ export default function StudioPage() {
                     <SelectValue placeholder={isLoadingCampaigns ? "Loading campaigns..." : "Select a campaign or leave blank"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Campaign (Standalone Ad)</SelectItem>
+                    <SelectItem value="none">No Campaign (Standalone Ad)</SelectItem>
                     {campaigns.map((campaign) => (
                       <SelectItem key={campaign.id} value={campaign.id.toString()}>
                         {campaign.product_name} ({campaign.campaign_type})
