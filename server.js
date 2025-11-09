@@ -2,12 +2,21 @@ const { createServer } = require('http')
 const { parse } = require('url')
 const next = require('next')
 
+// Load environment variables
+require('dotenv').config()
+
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
 const port = process.env.PORT || 3000
 
 // Engine service URL (separate Railway service)
 const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8000'
+
+console.log('Environment check:')
+console.log('NODE_ENV:', process.env.NODE_ENV)
+console.log('ENGINE_URL:', ENGINE_URL)
+console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY)
+console.log('All env vars:', Object.keys(process.env).filter(key => key.includes('ENGINE') || key.includes('OPENAI')))
 
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
