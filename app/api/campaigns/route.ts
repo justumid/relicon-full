@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
       platforms
     } = body;
 
+    console.log('Creating campaign with data:', { userId, name, objective });
+
     if (!userId || !name) {
       return NextResponse.json(
         { error: 'User ID and name are required' },
@@ -82,42 +84,77 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data, error } = await supabaseServer
-      .from('generated_videos')
-      .insert({
-        user_id: userId,
-        product_name: name,
-        product_description: targetAudience?.description || '',
-        campaign_type: objective || 'awareness',
-        status: 'queued',
-        metadata: {
-          budget_total: budgetTotal,
-          budget_daily: budgetDaily,
+    // Try to insert into campaigns table first
+    let campaignData;
+    let error;
+
+    try {
+      const { data, error: campaignError } = await supabaseServer
+        .from('campaigns')
+        .insert({
+          user_id: userId,
+          name: name,
+          objective: objective || 'awareness',
+          budget_total: budgetTotal || 0,
+          budget_daily: budgetDaily || 0,
           start_date: startDate,
           end_date: endDate,
           target_audience: targetAudience || {},
-          platforms: platforms || []
-        }
-      })
-      .select()
-      .single();
+          platforms: platforms || [],
+          status: 'active'
+        })
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error creating campaign:', error);
-      return NextResponse.json(
-        { error: 'Failed to create campaign' },
-        { status: 500 }
-      );
+      if (campaignError) {
+        console.log('Campaigns table not available, using generated_videos table');
+        throw campaignError;
+      }
+
+      campaignData = data;
+    } catch (campaignError) {
+      // Fallback to generated_videos table
+      const { data, error: videoError } = await supabaseServer
+        .from('generated_videos')
+        .insert({
+          user_id: userId,
+          product_name: name,
+          product_description: targetAudience?.description || '',
+          campaign_type: objective || 'awareness',
+          status: 'queued',
+          metadata: {
+            budget_total: budgetTotal,
+            budget_daily: budgetDaily,
+            start_date: startDate,
+            end_date: endDate,
+            target_audience: targetAudience || {},
+            platforms: platforms || []
+          }
+        })
+        .select()
+        .single();
+
+      if (videoError) {
+        console.error('Error creating campaign in generated_videos:', videoError);
+        return NextResponse.json(
+          { error: 'Failed to create campaign', details: videoError.message },
+          { status: 500 }
+        );
+      }
+
+      campaignData = data;
     }
+
+    console.log('Campaign created successfully:', campaignData);
 
     return NextResponse.json({
       success: true,
-      campaign: data
+      campaign: campaignData
     });
   } catch (error) {
     console.error('Create campaign error:', error);
     return NextResponse.json(
-      { error: 'Failed to create campaign' },
+      { error: 'Failed to create campaign', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
