@@ -3,7 +3,7 @@ nixPkgs = ['nodejs_20', 'python311', 'python311Packages.pip']
 
 [phases.install]
 cmds = [
-    'npm ci',
+    'npm install',
 ]
 
 [phases.build]
