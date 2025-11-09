@@ -95,6 +95,19 @@ app.prepare().then(() => {
             body: body
           })
           
+          console.log(`Engine response status: ${response.status}`)
+          
+          if (!response.ok) {
+            const errorText = await response.text()
+            console.error(`Engine error (${response.status}):`, errorText)
+            res.writeHead(response.status, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ 
+              error: `Engine error: ${response.status}`,
+              details: errorText
+            }))
+            return
+          }
+          
           // Copy response headers
           for (const [key, value] of response.headers.entries()) {
             res.setHeader(key, value)
