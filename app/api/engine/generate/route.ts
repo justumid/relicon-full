@@ -74,22 +74,26 @@ export async function POST(request: NextRequest) {
     console.log('- Request body keys:', Object.keys(body));
     console.log('- Product name:', body.product_name);
     
-    // Use dynamic import for node-fetch to handle TLS issues
-    const fetch = (await import('node-fetch')).default;
-    const https = await import('https');
-    
-    const agent = new https.Agent({
-      rejectUnauthorized: false // Allow self-signed certificates
-    });
-    
-    const response = await fetch(`${engineUrl}/generate`, {
+    // For Railway, we need to handle TLS properly
+    const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      agent: engineUrl.startsWith('https:') ? agent : undefined
-    });
+    };
+
+    // Disable TLS verification for Railway internal calls
+    if (engineUrl.includes('railway.app')) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    }
+    
+    const response = await fetch(`${engineUrl}/generate`, fetchOptions);
+    
+    // Re-enable TLS verification
+    if (engineUrl.includes('railway.app')) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
+    }
 
     console.log('Engine response status:', response.status);
     console.log('Engine response headers:', Object.fromEntries(response.headers.entries()));
