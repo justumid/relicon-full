@@ -56,14 +56,9 @@ app.prepare().then(() => {
         return
       }
       
-      // Proxy API routes to Python engine service
-      if (parsedUrl.pathname.startsWith('/api/engine/') || parsedUrl.pathname === '/api/chat') {
-        let enginePath;
-        if (parsedUrl.pathname.startsWith('/api/engine/')) {
-          enginePath = parsedUrl.pathname.replace('/api/engine', '')
-        } else if (parsedUrl.pathname === '/api/chat') {
-          enginePath = '/chat' // Map /api/chat to /chat on engine
-        }
+      // Proxy API routes to Python engine service (except chat)
+      if (parsedUrl.pathname.startsWith('/api/engine/')) {
+        let enginePath = parsedUrl.pathname.replace('/api/engine', '')
         const engineUrl = `${ENGINE_URL}${enginePath}${parsedUrl.search || ''}`
         
         console.log(`Proxying to engine: ${engineUrl}`)
