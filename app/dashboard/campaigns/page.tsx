@@ -28,11 +28,11 @@ export default function CampaignsPage() {
 
   const fetchCampaigns = async () => {
     if (!user?.id) return
-    
+
     try {
-      const response = await fetch(`/api/campaigns?userId=${user.id}`)
+      const response = await fetch('/api/campaigns')
       const data = await response.json()
-      
+
       if (data.success) {
         setCampaigns(data.campaigns)
       } else {

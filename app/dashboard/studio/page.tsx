@@ -75,7 +75,7 @@ export default function StudioPage() {
 
     setIsLoadingCampaigns(true)
     try {
-      const response = await fetch(`/api/campaigns?userId=${user.id}`)
+      const response = await fetch('/api/campaigns')
       const data = await response.json()
 
       if (data.success) {
@@ -161,7 +161,6 @@ export default function StudioPage() {
           call_to_action: "Learn more",
           creative_style: formData.creativeStyle || "modern",
           product_image_url: productImageUrl,
-          user_id: user?.id,
           campaign_id: formData.campaignId || null
         })
       })

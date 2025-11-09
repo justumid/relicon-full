@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Instagram, Facebook, Music2, Trash2, RefreshCw } from "lucide-react"
+import { Instagram, Facebook, Music2, Trash2, RefreshCw, LogOut } from "lucide-react"
+import { useAuth } from "@/lib/auth"
 
 interface SocialAccount {
   id: number
@@ -18,12 +20,22 @@ interface SocialAccount {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const { user, signOut } = useAuth()
   const [accounts, setAccounts] = useState<SocialAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState<string | null>(null)
 
-  // TODO: Get user ID from authentication
-  const userId = null // Replace with auth.user?.id when auth is implemented
+  const handleSignOut = async () => {
+    const { error } = await signOut()
+
+    if (error) {
+      toast.error('Failed to sign out')
+    } else {
+      toast.success('Signed out successfully')
+      router.push('/login')
+    }
+  }
 
   useEffect(() => {
     fetchAccounts()
@@ -54,8 +66,10 @@ export default function SettingsPage() {
   }, [])
 
   const fetchAccounts = async () => {
+    if (!user?.id) return
+
     try {
-      const response = await fetch(`/api/social/accounts?userId=${userId}`)
+      const response = await fetch('/api/social/accounts')
       const data = await response.json()
       setAccounts(data.accounts || [])
     } catch (error) {
@@ -66,10 +80,12 @@ export default function SettingsPage() {
   }
 
   const connectPlatform = (platform: string) => {
+    if (!user?.id) return
+
     setConnecting(platform)
     const connectUrl = platform === 'meta'
-      ? `/api/social/connect/meta?userId=${userId}`
-      : `/api/social/connect/tiktok?userId=${userId}`
+      ? '/api/social/connect/meta'
+      : '/api/social/connect/tiktok'
 
     window.location.href = connectUrl
   }
@@ -285,6 +301,25 @@ export default function SettingsPage() {
             <li>Accounts need periodic re-authorization (every 60 days)</li>
           </ul>
         </div>
+
+        {/* Account Settings */}
+        <Card className="mt-6 p-6 bg-[#0f0f0f] border border-[#252525]">
+          <h2 className="text-lg font-semibold text-white mb-4">Account</h2>
+          <div className="flex items-center justify-between p-4 bg-[#0a0a0a] rounded-lg border border-[#252525]">
+            <div>
+              <p className="text-white font-medium mb-1">Signed in as</p>
+              <p className="text-gray-400 text-sm">{user?.email || 'Not signed in'}</p>
+            </div>
+            <Button
+              onClick={handleSignOut}
+              variant="outline"
+              className="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
   )

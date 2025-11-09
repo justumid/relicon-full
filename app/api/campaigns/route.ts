@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { getAuthUser } from '@/lib/auth-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,16 +11,19 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const status = searchParams.get('status');
+    // Get authenticated user
+    const user = await getAuthUser();
 
-    if (!userId || userId === 'null') {
+    if (!user) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
+
+    const userId = user.id;
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
 
     // Try to fetch from campaigns table first
     let campaignsData;
@@ -92,9 +96,19 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const user = await getAuthUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id;
     const body = await request.json();
     const {
-      userId,
       name,
       objective,
       budgetTotal,
@@ -107,9 +121,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Creating campaign with data:', { userId, name, objective });
 
-    if (!userId || !name) {
+    if (!name) {
       return NextResponse.json(
-        { error: 'User ID and name are required' },
+        { error: 'Name is required' },
         { status: 400 }
       );
     }

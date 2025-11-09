@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { getAuthUser } from '@/lib/auth-server';
 import {
   rateLimit,
   rateLimitResponse,
@@ -14,6 +15,16 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const user = await getAuthUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     // Rate limiting: 5 generation requests per hour per IP
     const rateLimitResult = rateLimit(request, 5, 3600000); // 1 hour
     if (!rateLimitResult.allowed) {
@@ -91,7 +102,7 @@ export async function POST(request: NextRequest) {
           target_audience: body.target_audience,
           creative_style: body.creative_style,
           product_image_url: body.product_image_url,
-          user_id: body.user_id || null,
+          user_id: user.id,
           campaign_id: body.campaign_id || null,
           status: 'queued',
           progress: 0,

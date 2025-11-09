@@ -48,11 +48,11 @@ interface CampaignTemplate {
 interface CreateCampaignModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  userId: string
+  userId?: string // Optional - no longer needed, auth handled server-side
   onSuccess?: () => void
 }
 
-export function CreateCampaignModal({ open, onOpenChange, userId, onSuccess }: CreateCampaignModalProps) {
+export function CreateCampaignModal({ open, onOpenChange, onSuccess }: CreateCampaignModalProps) {
   const [isCreating, setIsCreating] = useState(false)
   const [savedTemplates, setSavedTemplates] = useState<Record<string, CampaignTemplate>>({})
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
@@ -152,7 +152,6 @@ export function CreateCampaignModal({ open, onOpenChange, userId, onSuccess }: C
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
           name: formData.name,
           objective: formData.objective,
           targetAudience: {
