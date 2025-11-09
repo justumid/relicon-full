@@ -18,7 +18,7 @@ app = FastAPI(title="Relicon Combined Server")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://relicon.co", "https://app.relicon.co", "https://relicon-full-production-35cc.up.railway.app"],
+    allow_origins=["https://relicon.co", "https://app.relicon.co"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,7 +48,7 @@ async def serve_frontend(request: Request, full_path: str):
     # Get hostname for domain detection
     hostname = request.headers.get("host", "")
     is_app_subdomain = hostname.startswith("app.") or hostname == "app.relicon.co"
-    is_main_domain = hostname == "relicon.co" or "railway.app" in hostname
+    is_main_domain = hostname == "relicon.co"
     
     # Handle app subdomain routing
     if is_app_subdomain:

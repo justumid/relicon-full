@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const isAppSubdomain = hostname.startsWith('app.') || hostname === 'app.relicon.co';
-  const isMainDomain = hostname === 'relicon.co' || hostname.includes('railway.app');
+  const isMainDomain = hostname === 'relicon.co';
 
   // Handle app subdomain routing
   if (isAppSubdomain) {
