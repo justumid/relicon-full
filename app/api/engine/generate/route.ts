@@ -69,8 +69,10 @@ export async function POST(request: NextRequest) {
 
     // Forward to FastAPI engine
     const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
-    console.log('Attempting to connect to engine:', engineUrl);
-    console.log('All env vars:', Object.keys(process.env).filter(k => k.includes('ENGINE')));
+    console.log('Generation request details:');
+    console.log('- ENGINE_URL:', engineUrl);
+    console.log('- Request body keys:', Object.keys(body));
+    console.log('- Product name:', body.product_name);
     
     const response = await fetch(`${engineUrl}/generate`, {
       method: 'POST',
@@ -80,15 +82,24 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
+    console.log('Engine response status:', response.status);
+    console.log('Engine response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Engine error response:', response.status, errorText);
       return NextResponse.json({ 
-        error: `Engine error: ${response.status} - ${errorText}` 
+        error: `Engine error: ${response.status} - ${errorText}`,
+        details: {
+          engineUrl,
+          status: response.status,
+          response: errorText
+        }
       }, { status: response.status });
     }
 
     const data = await response.json();
+    console.log('Engine success response:', data);
 
     // Store video generation job in database
     try {
