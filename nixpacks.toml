@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs", "python310"]
+nixPkgs = ["nodejs", "python3", "python3Packages.pip"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install", "cd engine && pip install -r requirements.txt"]
 
 [phases.build]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npm start"
+cmd = "cd engine && python static_server.py"

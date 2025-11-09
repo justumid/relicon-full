@@ -9,10 +9,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Disable static generation for all pages
-  experimental: {
-    dynamicIO: true,
-  },
 }
 
 export default nextConfig
