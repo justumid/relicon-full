@@ -34,12 +34,12 @@ app.prepare().then(() => {
       }
       
       // Proxy API routes to Python engine service
-      if (parsedUrl.pathname.startsWith('/api/engine/') || parsedUrl.pathname.startsWith('/api/chat')) {
+      if (parsedUrl.pathname.startsWith('/api/engine/') || parsedUrl.pathname === '/api/chat') {
         let enginePath;
         if (parsedUrl.pathname.startsWith('/api/engine/')) {
           enginePath = parsedUrl.pathname.replace('/api/engine', '')
-        } else {
-          enginePath = parsedUrl.pathname // Keep /api/chat as is
+        } else if (parsedUrl.pathname === '/api/chat') {
+          enginePath = '/chat' // Map /api/chat to /chat on engine
         }
         const engineUrl = `${ENGINE_URL}${enginePath}${parsedUrl.search || ''}`
         
