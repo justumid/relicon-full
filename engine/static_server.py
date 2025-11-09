@@ -18,7 +18,7 @@ app = FastAPI(title="Relicon Combined Server")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://relicon.co", "https://app.relicon.co"],
+    allow_origins=["https://app.relicon.co"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,40 +39,13 @@ if public_path.exists():
 
 @app.get("/{full_path:path}")
 async def serve_frontend(request: Request, full_path: str):
-    """Serve Next.js frontend with dual domain routing"""
+    """Serve Next.js frontend on single domain"""
     
     # Skip API routes
     if full_path.startswith("api/"):
         return {"error": "API route not found"}
     
-    # Get hostname for domain detection
-    hostname = request.headers.get("host", "")
-    is_app_subdomain = hostname.startswith("app.") or hostname == "app.relicon.co"
-    is_main_domain = hostname == "relicon.co"
-    
-    # Handle app subdomain routing
-    if is_app_subdomain:
-        # App subdomain: serve login/dashboard
-        if full_path == "" or full_path == "/":
-            return RedirectResponse(url="/login")
-        
-        # Only allow app routes
-        allowed_paths = ["login", "dashboard", "_next", "favicon"]
-        if not any(full_path.startswith(path) for path in allowed_paths):
-            return RedirectResponse(url="/dashboard")
-    
-    # Handle main domain routing  
-    elif is_main_domain:
-        # Main domain: redirect app routes to app subdomain
-        if full_path.startswith("dashboard") or full_path == "login":
-            return RedirectResponse(url=f"https://app.relicon.co/{full_path}")
-        
-        # Serve landing page and marketing content
-        marketing_paths = ["", "/", "about", "contact", "join-waitlist", "_next", "favicon"]
-        if not any(full_path.startswith(path) for path in marketing_paths):
-            return RedirectResponse(url="/")
-    
-    # Try to serve specific page first
+    # Serve all pages normally - landing, login, dashboard all on app.relicon.co
     page_paths = [
         Path(__file__).parent.parent / ".next" / "server" / "pages" / f"{full_path}.html",
         Path(__file__).parent.parent / ".next" / "server" / "app" / full_path / "page.html",

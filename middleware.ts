@@ -3,30 +3,14 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
-  const isAppSubdomain = hostname.startsWith('app.') || hostname === 'app.relicon.co';
-  const isMainDomain = hostname === 'relicon.co';
+  const isAppDomain = hostname === 'app.relicon.co';
 
-  // Handle app subdomain routing
-  if (isAppSubdomain) {
-    // Redirect root to login
+  // Only handle app.relicon.co
+  if (isAppDomain) {
+    // Landing page at root
     if (request.nextUrl.pathname === '/') {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    
-    // Only allow app routes on app subdomain
-    const allowedPaths = ['/login', '/dashboard', '/api', '/_next', '/favicon'];
-    const isAllowed = allowedPaths.some(path => request.nextUrl.pathname.startsWith(path));
-    
-    if (!isAllowed) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-  } 
-  
-  // Handle main domain routing
-  if (isMainDomain) {
-    // Redirect app routes to app subdomain
-    if (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname === '/login') {
-      return NextResponse.redirect(new URL(`https://app.relicon.co${request.nextUrl.pathname}`));
+      // Show landing page, don't redirect
+      return NextResponse.next();
     }
   }
 
