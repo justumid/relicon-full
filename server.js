@@ -44,6 +44,9 @@ app.prepare().then(() => {
         const engineUrl = `${ENGINE_URL}${enginePath}${parsedUrl.search || ''}`
         
         console.log(`Proxying to engine: ${engineUrl}`)
+        console.log(`Engine URL configured: ${ENGINE_URL}`)
+        console.log(`Request method: ${req.method}`)
+        console.log(`Request path: ${parsedUrl.pathname}`)
         
         try {
           const fetch = (await import('node-fetch')).default

@@ -52,7 +52,8 @@ async def process_chat(request: ChatRequest) -> ChatResponse:
     try:
         client = get_openai_client()
         
-        completion = await client.chat.completions.create(
+        # Use sync method, not async
+        completion = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
