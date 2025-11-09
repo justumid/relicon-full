@@ -2,6 +2,11 @@ const { createServer } = require('http')
 const { parse } = require('url')
 const next = require('next')
 
+// Disable TLS verification for Railway internal calls globally
+if (process.env.NODE_ENV === 'production') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+}
+
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = '0.0.0.0'
 const port = process.env.PORT || 3000
@@ -67,11 +72,6 @@ app.prepare().then(() => {
         console.log(`Request path: ${parsedUrl.pathname}`)
         
         try {
-          // Disable TLS verification for Railway internal calls
-          if (engineUrl.includes('railway.app')) {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-          }
-          
           const fetch = (await import('node-fetch')).default
           
           // Collect request body for POST requests
@@ -115,16 +115,7 @@ app.prepare().then(() => {
           
           res.writeHead(response.status)
           response.body.pipe(res)
-          
-          // Re-enable TLS verification
-          if (engineUrl.includes('railway.app')) {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1'
-          }
         } catch (error) {
-          // Re-enable TLS verification on error too
-          if (engineUrl.includes('railway.app')) {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1'
-          }
           console.error('Engine proxy error:', error)
           res.writeHead(503, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify({ 
