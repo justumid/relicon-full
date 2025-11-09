@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
 export const revalidate = 0;
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // Lazy initialization to avoid build-time errors
 let openaiInstance: OpenAI | null = null;
@@ -21,40 +28,67 @@ function getOpenAI(): OpenAI {
   return openaiInstance;
 }
 
+async function getUserAnalytics(userId?: string) {
+  if (!userId) return null;
+  
+  try {
+    // Get user's campaigns and analytics
+    const { data: campaigns } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const { data: videos } = await supabase
+      .from('videos')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Calculate basic metrics
+    const totalVideos = videos?.length || 0;
+    const totalCampaigns = campaigns?.length || 0;
+    
+    // Get recent performance (last 7 days)
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    
+    const recentVideos = videos?.filter(v => 
+      new Date(v.created_at) > lastWeek
+    ) || [];
+
+    return {
+      totalVideos,
+      totalCampaigns,
+      recentVideos: recentVideos.length,
+      campaigns: campaigns?.slice(0, 5), // Last 5 campaigns
+      videos: videos?.slice(0, 10) // Last 10 videos
+    };
+  } catch (error) {
+    console.error('Error fetching user analytics:', error);
+    return null;
+  }
+}
+
 const SYSTEM_PROMPT = `You are Relicon AI, an expert advertising and analytics assistant specializing in social media marketing, video ads, and performance optimization.
 
+You have access to the user's campaign and video data. When users ask about their performance, use the provided analytics data to give specific, personalized insights.
+
 Your primary role is to help users:
-1. **Understand their ad performance metrics** (CTR, ROAS, conversions, reach, impressions, engagement)
-2. **Analyze campaign performance** and identify what's working or not working
-3. **Provide actionable recommendations** to improve ROI and reduce costs
-4. **Answer questions about advertising concepts** (CTR, ROAS, CPM, CPC, conversion tracking)
-5. **Suggest creative strategies** for video ads on Instagram, Facebook, and TikTok
-6. **Help with campaign planning** and budget allocation
+1. **Analyze their specific campaign performance** using their actual data
+2. **Compare metrics over time** (this week vs last week, etc.)
+3. **Provide actionable recommendations** based on their performance
+4. **Answer questions about their ads** (CTR, views, engagement, costs)
+5. **Suggest improvements** for underperforming campaigns
+6. **Help with campaign planning** based on past performance
+
+When you have user data, reference specific numbers and campaigns. When you don't have data, ask them to provide more context or suggest they create some campaigns first.
 
 Always be helpful, concise, and provide actionable insights. Keep responses under 200 words.`;
 
 export async function POST(request: NextRequest) {
   try {
-    // Log environment for debugging
-    console.log('Chat API called');
-    console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
-    console.log('OPENAI_API_KEY length:', process.env.OPENAI_API_KEY?.length || 0);
-
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not set in environment variables');
-      return NextResponse.json(
-        {
-          error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables.',
-          debug: {
-            hasKey: false,
-            env: process.env.NODE_ENV
-          }
-        },
-        { status: 500 }
-      );
-    }
-
-    const { messages, message } = await request.json();
+    const { messages, message, userId } = await request.json();
 
     // Handle both message formats
     const userMessage = message || (messages && messages[messages.length - 1]?.content);
@@ -66,12 +100,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Calling OpenAI API...');
+    // Get user analytics data
+    const analytics = await getUserAnalytics(userId);
+    
+    // Prepare context for AI
+    let contextMessage = '';
+    if (analytics) {
+      contextMessage = `
+User Analytics Context:
+- Total Videos: ${analytics.totalVideos}
+- Total Campaigns: ${analytics.totalCampaigns}
+- Videos Created This Week: ${analytics.recentVideos}
+
+Recent Campaigns: ${analytics.campaigns?.map(c => 
+  `"${c.name}" (${c.campaign_type}, created ${new Date(c.created_at).toLocaleDateString()})`
+).join(', ') || 'None'}
+
+Recent Videos: ${analytics.videos?.map(v => 
+  `"${v.product_name}" (${v.status}, created ${new Date(v.created_at).toLocaleDateString()})`
+).join(', ') || 'None'}
+
+Use this data to provide specific insights about the user's performance.
+`;
+    } else {
+      contextMessage = 'No user data available. Ask the user to provide more context or suggest they create campaigns first.';
+    }
+
+    console.log('Calling OpenAI API with user context...');
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: contextMessage },
         { role: 'user', content: userMessage }
       ],
       max_tokens: 300,
@@ -85,10 +146,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Chat API error:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
 
-    // More specific error message
     let errorMessage = 'Chat service temporarily unavailable. Please try again.';
     if (error.message?.includes('API key')) {
       errorMessage = 'Invalid OpenAI API key. Please check your configuration.';
