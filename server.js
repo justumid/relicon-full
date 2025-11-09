@@ -50,13 +50,26 @@ app.prepare().then(() => {
         
         try {
           const fetch = (await import('node-fetch')).default
+          
+          // Collect request body for POST requests
+          let body = undefined
+          if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+            body = await new Promise((resolve) => {
+              let data = ''
+              req.on('data', chunk => data += chunk)
+              req.on('end', () => resolve(data))
+            })
+          }
+          
           const response = await fetch(engineUrl, {
             method: req.method,
             headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
               ...req.headers,
               'host': undefined // Remove host header
             },
-            body: req.method !== 'GET' && req.method !== 'HEAD' ? req : undefined
+            body: body
           })
           
           // Copy response headers
