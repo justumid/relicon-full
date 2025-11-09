@@ -20,11 +20,15 @@ const handle = app.getRequestHandler()
 console.log('Starting Next.js app...')
 
 app.prepare().then(() => {
-  console.log('Next.js app prepared')
+  console.log('Next.js app prepared successfully')
+  console.log('Environment:', process.env.NODE_ENV)
+  console.log('Port:', port)
+  console.log('Hostname:', hostname)
   
   createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true)
+      console.log(`Request: ${req.method} ${parsedUrl.pathname}`)
       
       // Add CORS headers
       res.setHeader('Access-Control-Allow-Origin', '*')
