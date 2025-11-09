@@ -29,21 +29,37 @@ function getOpenAI(): OpenAI {
 }
 
 async function getUserAnalytics(userId?: string) {
-  if (!userId) return null;
+  console.log('Getting analytics for userId:', userId);
+  
+  if (!userId || userId === 'null' || userId === 'undefined') {
+    console.log('No valid userId provided');
+    return null;
+  }
   
   try {
     // Get user's campaigns and analytics
-    const { data: campaigns } = await supabase
+    const { data: campaigns, error: campaignsError } = await supabase
       .from('campaigns')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    const { data: videos } = await supabase
-      .from('videos')
+    if (campaignsError) {
+      console.log('Campaigns query error:', campaignsError);
+    }
+
+    const { data: videos, error: videosError } = await supabase
+      .from('generated_videos')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    if (videosError) {
+      console.log('Videos query error:', videosError);
+    }
+
+    console.log('Found campaigns:', campaigns?.length || 0);
+    console.log('Found videos:', videos?.length || 0);
 
     // Calculate basic metrics
     const totalVideos = videos?.length || 0;
@@ -57,13 +73,16 @@ async function getUserAnalytics(userId?: string) {
       new Date(v.created_at) > lastWeek
     ) || [];
 
-    return {
+    const analytics = {
       totalVideos,
       totalCampaigns,
       recentVideos: recentVideos.length,
       campaigns: campaigns?.slice(0, 5), // Last 5 campaigns
       videos: videos?.slice(0, 10) // Last 10 videos
     };
+
+    console.log('Analytics result:', analytics);
+    return analytics;
   } catch (error) {
     console.error('Error fetching user analytics:', error);
     return null;
