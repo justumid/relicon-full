@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, Dict, Any
 import uvicorn
 import time
+from chat_service import ChatRequest, ChatResponse, process_chat
 import logging
 from collections import defaultdict
 import json
@@ -168,6 +169,17 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     logger.warning(f"HTTP error {exc.status_code}: {exc.detail}")
     return await http_exception_handler(request, exc)
+
+# Chat endpoint
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat_endpoint(request: ChatRequest):
+    """Chat with Relicon AI assistant"""
+    try:
+        return await process_chat(request)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat service error: {str(e)}")
 
 # Health check with detailed status
 @app.get("/health")
