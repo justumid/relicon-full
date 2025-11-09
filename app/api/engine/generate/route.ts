@@ -59,39 +59,25 @@ export async function POST(request: NextRequest) {
     // Forward to FastAPI engine
     const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
     console.log('Attempting to connect to engine:', engineUrl);
+    console.log('All env vars:', Object.keys(process.env).filter(k => k.includes('ENGINE')));
     
-    let response;
-    let data;
-    
-    try {
-      response = await fetch(`${engineUrl}/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        timeout: 10000 // 10 second timeout
-      });
+    const response = await fetch(`${engineUrl}/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Engine responded with ${response.status}`);
-      }
-
-      data = await response.json();
-    } catch (engineError) {
-      console.error('Engine connection failed:', engineError);
-      console.error('ENGINE_URL was:', engineUrl);
-      
-      // Fallback: Create mock job for development
-      data = {
-        job_id: `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        status: 'queued',
-        message: 'Video generation started (mock mode - engine unavailable)',
-        estimated_time: 300
-      };
-      
-      console.log('Using mock generation due to engine failure:', data);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Engine error response:', response.status, errorText);
+      return NextResponse.json({ 
+        error: `Engine error: ${response.status} - ${errorText}` 
+      }, { status: response.status });
     }
+
+    const data = await response.json();
 
     // Store video generation job in database
     try {
@@ -130,49 +116,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Engine API error:', error);
-    
-    // Always provide a fallback mock response
-    const mockJobId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Store mock video generation job in database
-    try {
-      const { error: dbError } = await supabaseServer
-        .from('generated_videos')
-        .insert([{
-          job_id: mockJobId,
-          product_name: body.product_name || 'Untitled',
-          product_description: body.product_description,
-          campaign_type: body.campaign_type,
-          target_audience: body.target_audience,
-          creative_style: body.creative_style,
-          product_image_url: body.product_image_url,
-          user_id: body.user_id || null,
-          campaign_id: body.campaign_id || null,
-          status: 'processing',
-          progress: 25,
-          metadata: {
-            brand_name: body.brand_name,
-            brand_description: body.brand_description,
-            tone: body.tone,
-            duration: body.duration,
-            call_to_action: body.call_to_action,
-            mock_mode: true
-          }
-        }]);
-
-      if (dbError) {
-        console.error('Database insert error:', dbError);
-      }
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-    }
-
-    // Return mock success response
-    return NextResponse.json({
-      job_id: mockJobId,
-      status: 'queued',
-      message: 'Video generation started (development mode)',
-      estimated_time: 300
-    });
+    return NextResponse.json(
+      { error: `Failed to connect to engine: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { status: 503 }
+    );
   }
 }
