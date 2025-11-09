@@ -142,7 +142,7 @@ def check_rate_limit(client_ip: str, limit: int = 10, window: int = 3600) -> boo
 # Request models
 class VideoRequest(BaseModel):
     brand_name: str = Field(..., min_length=1, max_length=100)
-    brand_description: str = Field(..., min_length=1, max_length=1000)
+    brand_description: str = Field(default="", max_length=1000)
     product_name: str = Field(default="", max_length=100)
     product_description: str = Field(default="", max_length=1000)
     target_audience: str = Field(default="general audience", max_length=200)
