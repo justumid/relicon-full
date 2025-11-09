@@ -3,36 +3,63 @@ const { parse } = require('url')
 const next = require('next')
 
 const dev = process.env.NODE_ENV !== 'production'
-const hostname = 'localhost'
+const hostname = '0.0.0.0'
 const port = process.env.PORT || 3000
 
 // Engine service URL (separate Railway service)
-const ENGINE_URL = process.env.ENGINE_URL || 'https://your-engine-service.up.railway.app'
+const ENGINE_URL = process.env.ENGINE_URL || 'http://localhost:8000'
 
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
+console.log('Starting Next.js app...')
+
 app.prepare().then(() => {
+  console.log('Next.js app prepared')
+  
   createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true)
+      
+      // Add CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+      
+      // Handle preflight requests
+      if (req.method === 'OPTIONS') {
+        res.writeHead(200)
+        res.end()
+        return
+      }
       
       // Proxy API routes to Python engine service
       if (parsedUrl.pathname.startsWith('/api/engine/')) {
         const enginePath = parsedUrl.pathname.replace('/api/engine', '')
         const engineUrl = `${ENGINE_URL}${enginePath}${parsedUrl.search || ''}`
         
+        console.log(`Proxying to engine: ${engineUrl}`)
+        
         try {
           const fetch = (await import('node-fetch')).default
           const response = await fetch(engineUrl, {
             method: req.method,
-            headers: req.headers,
-            body: req.method !== 'GET' ? req : undefined
+            headers: {
+              ...req.headers,
+              'host': undefined // Remove host header
+            },
+            body: req.method !== 'GET' && req.method !== 'HEAD' ? req : undefined
           })
           
-          res.writeHead(response.status, response.headers.raw())
+          // Copy response headers
+          for (const [key, value] of response.headers.entries()) {
+            res.setHeader(key, value)
+          }
+          
+          res.writeHead(response.status)
           response.body.pipe(res)
         } catch (error) {
+          console.error('Engine proxy error:', error)
           res.writeHead(503, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify({ 
             error: 'Engine service unavailable',
@@ -46,14 +73,18 @@ app.prepare().then(() => {
     } catch (err) {
       console.error('Error occurred handling', req.url, err)
       res.statusCode = 500
-      res.end('internal server error')
+      res.end('Internal server error')
     }
   })
   .once('error', (err) => {
-    console.error(err)
+    console.error('Server error:', err)
     process.exit(1)
   })
-  .listen(port, () => {
+  .listen(port, hostname, () => {
     console.log(`> Ready on http://${hostname}:${port}`)
+    console.log(`> Engine URL: ${ENGINE_URL}`)
   })
+}).catch((err) => {
+  console.error('Failed to start Next.js app:', err)
+  process.exit(1)
 })
