@@ -61,70 +61,8 @@ app.prepare().then(() => {
         return
       }
       
-      // Proxy API routes to Python engine service (except chat)
-      if (parsedUrl.pathname.startsWith('/api/engine/')) {
-        let enginePath = parsedUrl.pathname.replace('/api/engine', '')
-        const engineUrl = `${ENGINE_URL}${enginePath}${parsedUrl.search || ''}`
-        
-        console.log(`Proxying to engine: ${engineUrl}`)
-        console.log(`Engine URL configured: ${ENGINE_URL}`)
-        console.log(`Request method: ${req.method}`)
-        console.log(`Request path: ${parsedUrl.pathname}`)
-        
-        try {
-          const fetch = (await import('node-fetch')).default
-          
-          // Collect request body for POST requests
-          let body = undefined
-          if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
-            body = await new Promise((resolve) => {
-              let data = ''
-              req.on('data', chunk => data += chunk)
-              req.on('end', () => resolve(data))
-            })
-          }
-          
-          const response = await fetch(engineUrl, {
-            method: req.method,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              ...req.headers,
-              'host': undefined // Remove host header
-            },
-            body: body
-          })
-          
-          console.log(`Engine response status: ${response.status}`)
-          
-          if (!response.ok) {
-            const errorText = await response.text()
-            console.error(`Engine error (${response.status}):`, errorText)
-            res.writeHead(response.status, { 'Content-Type': 'application/json' })
-            res.end(JSON.stringify({ 
-              error: `Engine error: ${response.status}`,
-              details: errorText
-            }))
-            return
-          }
-          
-          // Copy response headers
-          for (const [key, value] of response.headers.entries()) {
-            res.setHeader(key, value)
-          }
-          
-          res.writeHead(response.status)
-          response.body.pipe(res)
-        } catch (error) {
-          console.error('Engine proxy error:', error)
-          res.writeHead(503, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ 
-            error: 'Engine service unavailable',
-            message: 'Please try again later'
-          }))
-        }
-        return
-      }
+      // Remove engine proxy - let Next.js API routes handle it
+      // This forces all /api/engine/* requests to go through the API route handlers
       
       await handle(req, res, parsedUrl)
     } catch (err) {
