@@ -127,14 +127,18 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'tiktok':
-          const ttResult = await publishToTikTok(
-            account.access_token,
-            video.video_url,
-            caption,
-            hashtags
-          );
-          platformPostId = ttResult.publish_id;
-          permalink = ttResult.share_url;
+          try {
+            const ttResult = await publishToTikTok(
+              account.access_token,
+              video.video_url,
+              caption,
+              hashtags
+            );
+            platformPostId = ttResult?.publish_id || 'pending';
+            permalink = ttResult?.share_url || '';
+          } catch (error) {
+            throw new Error(`TikTok publishing not yet supported: ${error}`);
+          }
           break;
 
         default:
