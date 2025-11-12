@@ -503,7 +503,7 @@ export default function StudioPage() {
 
       {/* Publish Modal */}
       <PublishModal
-        isOpen={publishModalOpen}
+        open={publishModalOpen}
         onClose={() => setPublishModalOpen(false)}
         videoUrl={videoUrl || ''}
         videoId={videoId || 0}
