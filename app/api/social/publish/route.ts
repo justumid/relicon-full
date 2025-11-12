@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
             account.platform_user_id,
             account.access_token,
             video.video_url,
-            caption + (hashtags.length ? '\n\n' + hashtags.map(t => `#${t}`).join(' ') : '')
+            caption + (hashtags.length ? '\n\n' + hashtags.map((t: string) => `#${t}`).join(' ') : '')
           );
           platformPostId = fbResult.id;
           permalink = fbResult.permalink;
