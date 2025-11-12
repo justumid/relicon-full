@@ -134,7 +134,7 @@ export default function CampaignsPage() {
         <CreateCampaignModal
           open={isCreateModalOpen}
           onOpenChange={setIsCreateModalOpen}
-          userId={user.id}
+          userId={user?.id || ''}
           onSuccess={fetchCampaigns}
         />
       )}

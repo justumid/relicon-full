@@ -221,7 +221,7 @@ async function publishToInstagram(
   caption: string,
   hashtags: string[]
 ) {
-  const fullCaption = caption + (hashtags.length ? '\n\n' + hashtags.map(t => `#${t}`).join(' ') : '');
+  const fullCaption = caption + (hashtags.length ? '\n\n' + hashtags.map((t: string) => `#${t}`).join(' ') : '');
 
   // Step 1: Create media container
   const containerResponse = await fetch(
@@ -348,7 +348,7 @@ async function publishToTikTok(
   title: string,
   hashtags: string[]
 ) {
-  const fullTitle = title + (hashtags.length ? ' ' + hashtags.map(t => `#${t}`).join(' ') : '');
+  const fullTitle = title + (hashtags.length ? ' ' + hashtags.map((t: string) => `#${t}`).join(' ') : '');
 
   // Note: TikTok API requires uploading the video file directly
   // For now, we'll return an error message explaining this
