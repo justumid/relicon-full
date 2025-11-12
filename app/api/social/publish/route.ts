@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
         case 'tiktok':
           try {
-            const ttResult = await publishToTikTok(
+            const ttResult: any = await publishToTikTok(
               account.access_token,
               video.video_url,
               caption,
