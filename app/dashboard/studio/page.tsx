@@ -507,8 +507,8 @@ export default function StudioPage() {
         onOpenChange={setPublishModalOpen}
         videoUrl={videoUrl || ''}
         videoId={videoId || 0}
-        productName={productName}
-        productDescription={productDescription}
+        productName={formData.productName}
+        productDescription={formData.productDescription}
       />
     </div>
   )
