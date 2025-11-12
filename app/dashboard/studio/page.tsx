@@ -506,7 +506,7 @@ export default function StudioPage() {
         isOpen={publishModalOpen}
         onClose={() => setPublishModalOpen(false)}
         videoUrl={videoUrl || ''}
-        videoId={videoId}
+        videoId={videoId || 0}
       />
     </div>
   )
