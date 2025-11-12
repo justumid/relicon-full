@@ -107,11 +107,12 @@ Always be helpful, concise, and provide actionable insights. Keep responses unde
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, message, userId } = await request.json();
+    const { messages, message, userId, stream = true } = await request.json();
     
     console.log('Chat request received:');
     console.log('- userId:', userId);
     console.log('- message:', message);
+    console.log('- stream:', stream);
     console.log('- messages length:', messages?.length);
 
     // Handle both message formats
@@ -153,23 +154,70 @@ Use this data to provide specific insights about the user's performance.
 
     console.log('Context message prepared, length:', contextMessage.length);
 
-    console.log('Calling OpenAI API with user context...');
+    console.log('Calling OpenAI API with streaming...');
     const openai = getOpenAI();
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'system', content: contextMessage },
-        { role: 'user', content: userMessage }
-      ],
-      max_tokens: 300,
-      temperature: 0.7,
-    });
 
-    const response = completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response.';
-    console.log('OpenAI API success');
+    if (stream) {
+      // Streaming response
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: contextMessage },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 300,
+        temperature: 0.7,
+        stream: true,
+      });
 
-    return NextResponse.json({ message: response });
+      // Create a readable stream
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of completion) {
+              const content = chunk.choices[0]?.delta?.content || '';
+              if (content) {
+                const data = `data: ${JSON.stringify({ content })}\n\n`;
+                controller.enqueue(encoder.encode(data));
+              }
+            }
+            // Send end signal
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+          } catch (error) {
+            console.error('Streaming error:', error);
+            controller.error(error);
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    } else {
+      // Non-streaming response (fallback)
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: contextMessage },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 300,
+        temperature: 0.7,
+      });
+
+      const response = completion.choices[0]?.message?.content || 'I apologize, but I could not generate a response.';
+      console.log('OpenAI API success');
+
+      return NextResponse.json({ message: response });
+    }
 
   } catch (error: any) {
     console.error('Chat API error:', error);
