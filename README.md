@@ -36,24 +36,18 @@ cd relicon-full
 pnpm install
 
 # 3. Set up environment variables
-cp .env.local.template .env.local
-# Edit .env.local and add your API keys (see API_KEYS_GUIDE.md)
+cp .env.example .env.local
+# Edit .env.local and add your API keys
 
-# 4. Set up Supabase database
-# Follow SUPABASE_SETUP.md (10 minutes)
-# Or: Go to https://app.supabase.com, create project, run supabase-schema.sql
-
-# 5. Install Python dependencies
+# 4. Install Python dependencies
 cd engine
 pip install -r requirements.txt
 cd ..
 
-# 6. Validate setup
+# 5. Validate setup
 node scripts/validate-setup.js
 
-# 7. Start both servers (unified command)
-pnpm full              # Starts both frontend and backend
-# OR use the script directly:
+# 6. Start both servers
 ./start.sh
 ```
 
@@ -69,9 +63,9 @@ pnpm full              # Starts both frontend and backend
 
 | Guide | Description |
 |-------|-------------|
-| **[API_KEYS_GUIDE.md](API_KEYS_GUIDE.md)** | How to obtain all required API keys (OpenAI, Luma, ElevenLabs) |
-| **[SUPABASE_SETUP.md](SUPABASE_SETUP.md)** | Database setup with step-by-step instructions |
-| **[.env.local.template](.env.local.template)** | Environment variables template with explanations |
+| **[docs/](docs/)** | Complete documentation and setup guides |
+| **[deployment/](deployment/)** | AWS deployment scripts and tools |
+| **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** | Detailed project structure guide |
 
 ## 🏗️ Tech Stack
 
