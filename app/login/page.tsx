@@ -32,9 +32,10 @@ export default function LoginPage() {
 
     if (!loading && user) {
       console.log('Redirecting to:', redirectPath)
-      router.replace(redirectPath)
+      // Use window.location for hard navigation to ensure cookies are sent
+      window.location.href = redirectPath
     }
-  }, [user, loading, router, redirectPath])
+  }, [user, loading, redirectPath])
 
   // Show loading while checking auth
   if (loading) {
@@ -78,12 +79,17 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message)
+        setIsLoading(false)
       } else {
-        router.push(redirectPath)
+        // Don't set loading to false - let the redirect happen
+        // Give a tiny delay to ensure session is fully established
+        console.log('Login successful, redirecting to:', redirectPath)
+        setTimeout(() => {
+          window.location.href = redirectPath
+        }, 100)
       }
     } catch (err) {
       setError('An error occurred')
-    } finally {
       setIsLoading(false)
     }
   }
