@@ -1,20 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 // Supabase configuration with fallbacks
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
-// Create a single supabase client for interacting with your database
-// Configure to persist session in localStorage and auto-refresh
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'relicon-auth',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-  }
-})
+// Create a browser client that stores session in cookies (not localStorage)
+// This allows the middleware to read the same session
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Database types for type safety
 export interface WaitlistSignup {

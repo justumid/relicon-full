@@ -28,12 +28,12 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    console.log('Login page - loading:', loading, 'user:', user ? 'exists' : 'null', 'redirectPath:', redirectPath)
-
     if (!loading && user) {
-      console.log('Redirecting to:', redirectPath)
-      // Use window.location for hard navigation to ensure cookies are sent
-      window.location.href = redirectPath
+      console.log('User authenticated, redirecting to:', redirectPath)
+      // Small delay to ensure cookies are set
+      setTimeout(() => {
+        window.location.href = redirectPath
+      }, 100)
     }
   }, [user, loading, redirectPath])
 
