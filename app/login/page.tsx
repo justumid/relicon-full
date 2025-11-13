@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export default function LoginPage() {
   const { signIn, user, loading } = useAuth()
@@ -74,10 +74,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-[#111111] border-[#252525]">
-        <CardHeader>
-          <CardTitle className="text-white text-center">
+        <CardHeader className="text-center">
+          <CardTitle className="text-white">
             Sign In
           </CardTitle>
+          <CardDescription className="text-gray-400 mt-2">
+            Access is by invitation only. Use your provided credentials.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
