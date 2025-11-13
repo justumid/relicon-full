@@ -19,15 +19,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
+    let mounted = true
+
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
+        if (mounted) {
+          setUser(session?.user ?? null)
+          setLoading(false)
+        }
       } catch (error) {
         console.error('Error checking session:', error)
-        setUser(null)
-      } finally {
-        setLoading(false)
+        if (mounted) {
+          setUser(null)
+          setLoading(false)
+        }
       }
     }
 
@@ -35,12 +41,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
+        console.log('Auth state changed:', event, session?.user?.email)
+        if (mounted) {
+          setUser(session?.user ?? null)
+          // Only set loading to false on initial load, not on every auth change
+          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            setLoading(false)
+          }
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
