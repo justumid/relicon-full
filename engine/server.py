@@ -99,7 +99,13 @@ async def lifespan(app: FastAPI):
         # Shutdown
         logger.info("Shutting down server...")
         if app_state["job_manager"]:
-            await app_state["job_manager"].shutdown()
+            # Safely shutdown job manager if it has a shutdown method
+            if hasattr(app_state["job_manager"], 'shutdown'):
+                try:
+                    await app_state["job_manager"].shutdown()
+                except Exception as e:
+                    logger.warning(f"Shutdown warning: {e}")
+            logger.info("Server shutdown complete")
 
 # Initialize FastAPI with lifespan
 app = FastAPI(
@@ -152,7 +158,7 @@ class VideoRequest(BaseModel):
     creative_style: str = Field(default="modern", max_length=50)
     product_image_url: Optional[str] = None
 
-    @validator('*', pre=True)
+    @validator('*', pre=True, allow_reuse=True)
     def sanitize_input(cls, v):
         if isinstance(v, str):
             # Remove dangerous characters
@@ -161,6 +167,10 @@ class VideoRequest(BaseModel):
                 v = v.replace(char, '')
             return v.strip()
         return v
+
+    class Config:
+        # Enable arbitrary types and validation
+        validate_assignment = True
 
 # Error handlers
 @app.exception_handler(Exception)
