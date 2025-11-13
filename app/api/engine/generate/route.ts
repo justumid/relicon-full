@@ -16,14 +16,12 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     // Get authenticated user
+    // TODO: Re-enable auth after proper Supabase integration
     const user = await getAuthUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // Temporarily allow requests without auth to match middleware behavior
+    // Remove this when authentication is properly implemented
+    const userId = user?.id || 'anonymous';
 
     // Rate limiting: 5 generation requests per hour per IP
     const rateLimitResult = rateLimit(request, 5, 3600000); // 1 hour
@@ -126,7 +124,7 @@ export async function POST(request: NextRequest) {
           target_audience: body.target_audience,
           creative_style: body.creative_style,
           product_image_url: body.product_image_url,
-          user_id: user.id,
+          user_id: userId,
           campaign_id: body.campaign_id || null,
           status: 'queued',
           progress: 0,
