@@ -68,6 +68,12 @@ export function ChatWidget() {
         content: userMessage.content
       })
 
+      console.log('Sending chat request:', {
+        messagesCount: conversationHistory.length,
+        userId: userId,
+        lastMessage: userMessage.content.substring(0, 50)
+      })
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -81,9 +87,21 @@ export function ChatWidget() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to get response')
+        // Try to parse error as JSON, fallback to text
+        let errorMessage = 'Failed to get response'
+        try {
+          const errorData = await response.json()
+          console.error('Chat API error response:', errorData)
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          const errorText = await response.text()
+          console.error('Chat API error text:', errorText)
+          errorMessage = errorText || errorMessage
+        }
+        throw new Error(errorMessage)
       }
+
+      console.log('Chat API response OK, starting stream...')
 
       // Handle streaming response
       const reader = response.body?.getReader()
@@ -103,23 +121,29 @@ export function ChatWidget() {
       setMessages((prev) => [...prev, aiMessage])
 
       let accumulatedContent = ""
+      let buffer = ""  // Buffer for incomplete chunks
 
       while (true) {
         const { done, value } = await reader.read()
 
         if (done) break
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || ""
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6)
+            const data = line.slice(6).trim()
 
             if (data === '[DONE]') {
               setIsTyping(false)
               return
             }
+
+            if (!data) continue  // Skip empty data
 
             try {
               const parsed = JSON.parse(data)
@@ -137,7 +161,7 @@ export function ChatWidget() {
                 })
               }
             } catch (e) {
-              // Ignore parsing errors for malformed chunks
+              console.warn('Failed to parse SSE data:', data, e)
             }
           }
         }
@@ -145,6 +169,11 @@ export function ChatWidget() {
 
     } catch (error: any) {
       console.error('Chat error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      })
 
       // Remove the empty AI message if it exists
       setMessages((prev) => {
@@ -158,12 +187,12 @@ export function ChatWidget() {
 
       const errorMessage: Message = {
         role: "assistant",
-        content: "I apologize, but I encountered an error. Please try again.",
+        content: `I apologize, but I encountered an error: ${error.message}. Please check the console for details.`,
         timestamp: new Date(),
       }
 
       setMessages((prev) => [...prev, errorMessage])
-      toast.error('Failed to send message')
+      toast.error('Failed to send message: ' + error.message)
     } finally {
       setIsTyping(false)
     }
