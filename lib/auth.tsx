@@ -21,18 +21,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        setUser(session?.user ?? null)
-        setLoading(false)
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error('Session error:', error)
+          // Clear invalid session
+          await supabase.auth.signOut()
+        }
+
+        if (mounted) {
+          setUser(session?.user ?? null)
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Auth initialization error:', err)
+        if (mounted) {
+          setUser(null)
+          setLoading(false)
+        }
       }
-    })
+    }
+
+    initializeAuth()
 
     // Listen for auth changes (only for actual changes, not initial session)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
+        console.log('Auth event:', event, 'Session:', session ? 'exists' : 'null')
+
         if (mounted) {
-          setUser(session?.user ?? null)
+          // Clear user on sign out or token refresh errors
+          if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+            setUser(session?.user ?? null)
+          } else if (event === 'SIGNED_IN') {
+            setUser(session?.user ?? null)
+          } else {
+            setUser(session?.user ?? null)
+          }
         }
       }
     )

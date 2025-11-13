@@ -28,7 +28,10 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
+    console.log('Login page - loading:', loading, 'user:', user ? 'exists' : 'null', 'redirectPath:', redirectPath)
+
     if (!loading && user) {
+      console.log('Redirecting to:', redirectPath)
       router.replace(redirectPath)
     }
   }, [user, loading, router, redirectPath])
@@ -45,8 +48,22 @@ export default function LoginPage() {
   // Don't show login form if user is authenticated (will redirect via useEffect)
   if (user) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center flex-col gap-4">
         <div className="text-white">Redirecting...</div>
+        <button
+          onClick={async () => {
+            console.log('Manually clearing session...')
+            try {
+              await fetch('/api/auth/clear-session', { method: 'POST' })
+              window.location.href = '/login'
+            } catch (err) {
+              console.error('Failed to clear session:', err)
+            }
+          }}
+          className="text-sm text-gray-400 hover:text-white underline"
+        >
+          Stuck? Click here to clear session
+        </button>
       </div>
     )
   }
