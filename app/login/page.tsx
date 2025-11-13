@@ -29,19 +29,7 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      // Try router.push first, fallback to window.location
-      try {
-        router.push(redirectPath)
-        // Fallback after 500ms if router.push doesn't work
-        setTimeout(() => {
-          if (window.location.pathname === '/login') {
-            window.location.href = redirectPath
-          }
-        }, 500)
-      } catch (error) {
-        console.error('Redirect error:', error)
-        window.location.href = redirectPath
-      }
+      router.replace(redirectPath)
     }
   }, [user, loading, router, redirectPath])
 
@@ -54,15 +42,11 @@ export default function LoginPage() {
     )
   }
 
-  // Don't show login form if user is authenticated
+  // Don't show login form if user is authenticated (will redirect via useEffect)
   if (user) {
-    // Force immediate redirect using window.location as backup
-    if (typeof window !== 'undefined') {
-      window.location.href = redirectPath
-    }
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="text-white">Redirecting to dashboard...</div>
+        <div className="text-white">Redirecting...</div>
       </div>
     )
   }
