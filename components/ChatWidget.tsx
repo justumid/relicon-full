@@ -75,25 +75,86 @@ export function ChatWidget() {
         },
         body: JSON.stringify({
           messages: conversationHistory,
-          userId: userId
+          userId: userId,
+          stream: true
         })
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to get response')
       }
 
+      // Handle streaming response
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No response stream available')
+      }
+
+      // Create initial AI message
       const aiMessage: Message = {
         role: "assistant",
-        content: data.message,
+        content: "",
         timestamp: new Date(),
       }
 
       setMessages((prev) => [...prev, aiMessage])
+
+      let accumulatedContent = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6)
+
+            if (data === '[DONE]') {
+              setIsTyping(false)
+              return
+            }
+
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                accumulatedContent += parsed.content
+
+                // Update the last message with accumulated content
+                setMessages((prev) => {
+                  const newMessages = [...prev]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage && lastMessage.role === 'assistant') {
+                    lastMessage.content = accumulatedContent
+                  }
+                  return newMessages
+                })
+              }
+            } catch (e) {
+              // Ignore parsing errors for malformed chunks
+            }
+          }
+        }
+      }
+
     } catch (error: any) {
       console.error('Chat error:', error)
+
+      // Remove the empty AI message if it exists
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+        if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.content) {
+          newMessages.pop()
+        }
+        return newMessages
+      })
 
       const errorMessage: Message = {
         role: "assistant",
