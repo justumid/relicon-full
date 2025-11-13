@@ -15,12 +15,23 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Get redirect path from URL params
+  const [redirectPath, setRedirectPath] = useState('/dashboard')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect')
+    if (redirect) {
+      setRedirectPath(redirect)
+    }
+  }, [])
+
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && user) {
-      router.push('/dashboard')
+      router.push(redirectPath)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, redirectPath])
 
   // Show loading while checking auth
   if (loading) {
@@ -51,7 +62,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message)
       } else {
-        router.push('/dashboard')
+        router.push(redirectPath)
       }
     } catch (err) {
       setError('An error occurred')

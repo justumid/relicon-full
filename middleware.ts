@@ -1,27 +1,72 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const isMainDomain = hostname === 'relicon.co';
   const { pathname } = request.nextUrl;
 
-  // Simple auth check without Supabase middleware for now
-  // TODO: Add proper Supabase auth after fixing build issues
-  
-  // Protected routes that require authentication
+  // Create Supabase client
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          request.cookies.set({ name, value: '', ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
+
+  // Check authentication for protected routes
   const protectedRoutes = ['/dashboard'];
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  // For now, allow all access to avoid build issues
-  // Will add proper auth after build is fixed
-  
-  // Only handle relicon.co - serve all pages normally
-  if (isMainDomain) {
-    return NextResponse.next();
+  if (isProtectedRoute) {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      // Redirect to login if not authenticated
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
-  const response = NextResponse.next();
+  // Only handle relicon.co - serve all pages normally
+  if (isMainDomain) {
+    // Add security headers for main domain
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    return response;
+  }
 
   // Security Headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
