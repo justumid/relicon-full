@@ -68,32 +68,89 @@ export function ChatPanel() {
         content: userMessage.content
       })
 
-      // Call chat API
+      // Call chat API with streaming
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: conversationHistory,
-          userId: userId
+          userId: userId,
+          stream: true
         })
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to get response')
       }
 
-      // Add AI response
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.message,
-        },
-      ])
+      // Handle streaming response
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No response stream available')
+      }
+
+      // Create initial AI message
+      const aiMessage = { role: "assistant" as const, content: "" }
+      setMessages((prev) => [...prev, aiMessage])
+
+      let accumulatedContent = ""
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ""
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+
+            if (data === '[DONE]') {
+              setIsTyping(false)
+              return
+            }
+
+            if (!data) continue
+
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                accumulatedContent += parsed.content
+
+                setMessages((prev) => {
+                  const newMessages = [...prev]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage && lastMessage.role === 'assistant') {
+                    lastMessage.content = accumulatedContent
+                  }
+                  return newMessages
+                })
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE data:', data)
+            }
+          }
+        }
+      }
     } catch (error: any) {
       console.error('Chat error:', error)
+
+      // Remove empty AI message if exists
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+        if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.content) {
+          newMessages.pop()
+        }
+        return newMessages
+      })
+
       setMessages((prev) => [
         ...prev,
         {
@@ -130,32 +187,89 @@ export function ChatPanel() {
         content: userMessage.content
       })
 
-      // Call chat API
+      // Call chat API with streaming
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: conversationHistory,
-          userId: userId
+          userId: userId,
+          stream: true
         })
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to get response')
       }
 
-      // Add AI response
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.message,
-        },
-      ])
+      // Handle streaming response
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No response stream available')
+      }
+
+      // Create initial AI message
+      const aiMessage = { role: "assistant" as const, content: "" }
+      setMessages((prev) => [...prev, aiMessage])
+
+      let accumulatedContent = ""
+      let buffer = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ""
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+
+            if (data === '[DONE]') {
+              setIsTyping(false)
+              return
+            }
+
+            if (!data) continue
+
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                accumulatedContent += parsed.content
+
+                setMessages((prev) => {
+                  const newMessages = [...prev]
+                  const lastMessage = newMessages[newMessages.length - 1]
+                  if (lastMessage && lastMessage.role === 'assistant') {
+                    lastMessage.content = accumulatedContent
+                  }
+                  return newMessages
+                })
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE data:', data)
+            }
+          }
+        }
+      }
     } catch (error: any) {
       console.error('Chat error:', error)
+
+      // Remove empty AI message if exists
+      setMessages((prev) => {
+        const newMessages = [...prev]
+        const lastMessage = newMessages[newMessages.length - 1]
+        if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.content) {
+          newMessages.pop()
+        }
+        return newMessages
+      })
+
       setMessages((prev) => [
         ...prev,
         {
