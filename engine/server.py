@@ -233,24 +233,49 @@ async def generate_video(
         client_ip = request.client.host if request.client else "unknown"
         if not check_rate_limit(client_ip):
             raise HTTPException(429, "Rate limit exceeded")
-        
-        # Create a simple job ID without job manager
-        job_id = f"job_{int(time.time())}_{hash(video_request.product_name) % 10000}"
-        
-        logger.info(f"Started mock job {job_id} for {client_ip}")
-        
+
+        # Check if job manager is available
+        if not app_state["job_manager"]:
+            raise HTTPException(503, "Video generation service unavailable")
+
+        # Create job using orchestrator
+        job_data = video_request.dict()
+        job_id = app_state["job_manager"].create_job(job_data)
+
+        logger.info(f"Created job {job_id} for {client_ip}")
+
+        # Start the video generation in background
+        background_tasks.add_task(
+            run_video_generation,
+            job_id,
+            job_data
+        )
+
         return {
-            "job_id": job_id, 
+            "job_id": job_id,
             "status": "queued",
             "message": "Video generation started",
             "estimated_time": 300
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Generation failed: {e}")
         raise HTTPException(500, "Failed to start generation")
+
+# Background task for video generation
+def run_video_generation(job_id: str, job_data: Dict[str, Any]):
+    """Run video generation in background"""
+    try:
+        logger.info(f"Starting video generation for job {job_id}")
+        # This will be processed by the orchestrator
+        if app_state["job_manager"]:
+            # Update job status to processing
+            if hasattr(app_state["job_manager"], 'update_job_status'):
+                app_state["job_manager"].update_job_status(job_id, "processing")
+    except Exception as e:
+        logger.error(f"Video generation error for job {job_id}: {e}")
 
 # Job status endpoint
 @app.get("/status/{job_id}")
@@ -265,8 +290,8 @@ async def get_job_status(job_id: str):
     
     status = app_state["job_manager"].get_job_status(job_id)
     if not status:
-        raise HTTPException(404, "Job not found")
-    
+        return {"status": "not_found", "job_id": job_id}
+
     return status
 
 # Video serving endpoint
