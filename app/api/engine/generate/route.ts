@@ -68,13 +68,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Forward to FastAPI engine
+    // Use internal URL if on server, or proxy path for consistency
     const engineUrl = process.env.ENGINE_URL || 'http://localhost:8000';
     console.log('Generation request details:');
     console.log('- ENGINE_URL:', engineUrl);
     console.log('- Request body keys:', Object.keys(body));
     console.log('- Product name:', body.product_name);
-    
-    // For Railway, we need to handle TLS properly
+
     const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
@@ -83,17 +83,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     };
 
-    // Disable TLS verification for Railway internal calls
-    if (engineUrl.includes('railway.app')) {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    }
-    
     const response = await fetch(`${engineUrl}/generate`, fetchOptions);
-    
-    // Re-enable TLS verification
-    if (engineUrl.includes('railway.app')) {
-      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
-    }
 
     console.log('Engine response status:', response.status);
     console.log('Engine response headers:', Object.fromEntries(response.headers.entries()));
@@ -127,7 +117,6 @@ export async function POST(request: NextRequest) {
           creative_style: body.creative_style,
           product_image_url: body.product_image_url,
           user_id: user.id,
-          campaign_id: body.campaign_id || null,
           status: 'queued',
           progress: 0,
           metadata: {
@@ -136,6 +125,7 @@ export async function POST(request: NextRequest) {
             tone: body.tone,
             duration: body.duration,
             call_to_action: body.call_to_action,
+            campaign_id: body.campaign_id || null,
           }
         }]);
 
